@@ -11,6 +11,11 @@ AI-powered editor for Kustom Live Wallpaper (KLWP) files on Android. Modify your
 
 - 📱 **Smart Device Detection**
   - Automatically recommends best AI mode for your hardware
+- 🎨 **Multi-Format Support**
+  - Works with KLWP (wallpapers), KLCK (lock screens), and KWGT (widgets)
+  - Create matching presets across formats
+  - Automatic style extraction and adaptation
+  - Maintain consistent theming
   - Performance scoring and optimization tips
   - Works on low-end to high-end devices
 
@@ -42,6 +47,12 @@ Or build from source (see below)
 4. Start editing KLWP with natural language!
 
 ## Example Commands
+
+### Cross-Format Creation
+- "Create a matching KLCK lock screen"
+- "Make a 4x2 KWGT widget from this"
+- "Generate KLWP wallpaper from my widget"
+- "Create matching presets for all three apps"
 
 - "Change all text colors to #00FF00"
 - "Make the weather widget larger"
