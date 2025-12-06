@@ -1,0 +1,5 @@
+# KLWP AI App Requirements
+kivy>=2.3.0
+kivymd>=1.2.0
+pycryptodome>=3.19.0
+paramiko>=3.4.0

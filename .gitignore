@@ -1,0 +1,63 @@
+# Buildozer files
+.buildozer/
+bin/
+.gradle/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Kivy
+*.pyc
+*.pyo
+
+# Local configuration
+local.properties
+*.local
+
+# Android
+*.apk
+*.ap_
+*.dex
+*.class
+gen/
+out/
+
+# Secrets
+*.key
+*.pem
+secrets.json
