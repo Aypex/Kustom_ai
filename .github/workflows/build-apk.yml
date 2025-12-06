@@ -51,11 +51,16 @@ jobs:
       run: |
         pip install kivy kivymd
 
-    - name: Accept Android SDK licenses
+    - name: Setup Android SDK
       run: |
-        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
-        echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-        echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+        # Install Android SDK command-line tools
+        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O /tmp/cmdline-tools.zip
+        mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
+        unzip -q /tmp/cmdline-tools.zip -d ~/.buildozer/android/platform/android-sdk/cmdline-tools
+        mv ~/.buildozer/android/platform/android-sdk/cmdline-tools/cmdline-tools ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest
+        
+        # Accept licenses
+        yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
     - name: Build with Buildozer
       run: |
