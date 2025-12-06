@@ -34,6 +34,7 @@ jobs:
           autoconf \
           libtool \
           libtool-bin \
+          m4 \
           pkg-config \
           zlib1g-dev \
           libncurses5-dev \
@@ -46,7 +47,7 @@ jobs:
     - name: Install Buildozer
       run: |
         pip install --upgrade pip
-        pip install buildozer cython==0.29.36
+        pip install buildozer==1.5.0 cython==0.29.33
 
     - name: Install additional Python requirements
       run: |
@@ -60,6 +61,9 @@ jobs:
 
     - name: Build with Buildozer
       run: |
+        # Workaround for libffi autoconf issue - use bundled libtool macro
+        export ACLOCAL_PATH=/usr/share/aclocal
+        
         # Use buildozer with auto-accept for all prompts
         yes | buildozer -v android debug 2>&1 | tee build.log || true
         
