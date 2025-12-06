@@ -51,20 +51,19 @@ jobs:
       run: |
         pip install kivy kivymd
 
-    - name: Setup Android SDK
-      run: |
-        # Install Android SDK command-line tools
-        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O /tmp/cmdline-tools.zip
-        mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
-        unzip -q /tmp/cmdline-tools.zip -d ~/.buildozer/android/platform/android-sdk/cmdline-tools
-        mv ~/.buildozer/android/platform/android-sdk/cmdline-tools/cmdline-tools ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest
-        
-        # Accept licenses
-        yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+    - name: Cache Buildozer global directory
+      uses: actions/cache@v3
+      with:
+        path: ~/.buildozer
+        key: buildozer-${{ hashFiles('buildozer.spec') }}
 
     - name: Build with Buildozer
       run: |
-        buildozer android debug
+        # Use buildozer with auto-accept for all prompts
+        yes | buildozer -v android debug 2>&1 | tee build.log || true
+        
+        # Try again if first attempt had issues
+        buildozer -v android debug
 
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
