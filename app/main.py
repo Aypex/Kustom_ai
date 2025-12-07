@@ -35,6 +35,8 @@ from app.plugins import get_plugin_manager
 from app.onboarding import OnboardingManager
 from app.onboarding_screen import OnboardingScreen
 from app.chameleon_effects import ChameleonEffects, VoiceButtonReveal
+from app.preview_layout import SplitChatPreviewLayout
+from app.preview_system import PresetPreview, MoltType
 from klwp_mcp_server.klwp_handler import KLWPHandler
 
 
@@ -161,7 +163,7 @@ class HomeScreen(Screen):
 
 
 class LocalModelScreen(Screen):
-    """Local model chat interface with AI preset generation."""
+    """Local model chat interface with AI preset generation and live preview."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -175,8 +177,11 @@ class LocalModelScreen(Screen):
         self.theme_matcher = ThemeMatcher()
         self.onboarding = OnboardingManager()
         self.voice_reveal = VoiceButtonReveal()
+        self.current_preset_name = None  # Track current editing preset
 
-        layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        # Create chat layout (will be wrapped in split layout)
+        chat_layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        layout = chat_layout  # Alias for compatibility with existing code below
 
         # Back button
         btn_back = MDFlatButton(
@@ -237,7 +242,9 @@ class LocalModelScreen(Screen):
         )
         layout.add_widget(self.status_label)
 
-        self.add_widget(layout)
+        # Wrap chat layout in split layout with preview
+        self.split_layout = SplitChatPreviewLayout(chat_layout)
+        self.add_widget(self.split_layout)
 
         # Check if voice button should be revealed
         self.check_voice_button_reveal()
@@ -317,11 +324,110 @@ class LocalModelScreen(Screen):
         # Add AI response
         self.add_chat_message('Chameleon', response)
 
+        # Check for preset creation/editing commands
+        self._handle_preview_updates(message, response)
+
         # Check for easter egg trigger
         if easter_egg_data and easter_egg_data.get('trigger'):
             self.show_easter_egg_dialog(easter_egg_data)
 
         self.status_label.text = 'Status: Ready'
+
+    def _handle_preview_updates(self, user_message: str, ai_response: str):
+        """
+        Handle preview window showing/updating based on user commands.
+
+        Args:
+            user_message: User's message
+            ai_response: AI's response
+        """
+        msg_lower = user_message.lower()
+
+        # Check if user is creating a new preset
+        if any(word in msg_lower for word in ['create', 'generate', 'make', 'build']):
+            if 'wallpaper' in msg_lower or 'klwp' in msg_lower:
+                self._show_preview_for_creation(user_message, 'klwp')
+            elif 'lock screen' in msg_lower or 'klck' in msg_lower:
+                self._show_preview_for_creation(user_message, 'klck')
+            elif 'widget' in msg_lower or 'kwgt' in msg_lower:
+                self._show_preview_for_creation(user_message, 'kwgt')
+
+        # Check if user is editing an existing preset
+        elif 'edit' in msg_lower or 'modify' in msg_lower or 'change' in msg_lower:
+            # If preview is already visible, update it with molt
+            if self.split_layout.preview_visible:
+                self._update_preview_with_molt(user_message)
+
+        # Check if user wants to save
+        elif any(word in msg_lower for word in ['save', 'done', 'perfect', 'finished']):
+            # Hide preview when saving
+            self.split_layout.hide_preview()
+
+    def _show_preview_for_creation(self, description: str, preset_type: str):
+        """
+        Show preview window for new preset creation.
+
+        Args:
+            description: User's description
+            preset_type: 'klwp', 'klck', or 'kwgt'
+        """
+        # Generate placeholder preset (in real implementation, AI generates this)
+        # For now, create a simple preview
+        preset = PresetPreview(
+            preset_name=f"new_{preset_type}_preset",
+            preset_type=preset_type,
+            preset_data={'items': []},  # Placeholder
+            colors=['#000000', '#00FFFF', '#FF00FF']  # Example colors
+        )
+
+        self.current_preset_name = preset.preset_name
+
+        # Show preview with slide-in
+        self.split_layout.show_preview(
+            preset,
+            clearance_msg="Building this? 🦎"
+        )
+
+    def _update_preview_with_molt(self, user_command: str):
+        """
+        Update preview with molt animation based on user's edit command.
+
+        Args:
+            user_command: User's edit command
+        """
+        # Determine molt type from command
+        cmd_lower = user_command.lower()
+
+        if any(word in cmd_lower for word in ['color', 'blue', 'red', 'green', 'darker', 'lighter']):
+            molt_type = MoltType.COLOR_SHIFT
+            duration = 0.8
+        elif any(word in cmd_lower for word in ['bigger', 'smaller', 'larger', 'size', 'scale']):
+            molt_type = MoltType.SCALE
+            duration = 0.6
+        elif any(word in cmd_lower for word in ['add', 'create', 'new']):
+            molt_type = MoltType.BIRTH
+            duration = 1.0
+        elif any(word in cmd_lower for word in ['remove', 'delete', 'hide']):
+            molt_type = MoltType.FADE
+            duration = 0.6
+        else:
+            molt_type = MoltType.TRANSFORM
+            duration = 1.2
+
+        # Generate updated preset (placeholder - AI would generate this)
+        updated_preset = PresetPreview(
+            preset_name=self.current_preset_name or "updated_preset",
+            preset_type='klwp',  # Would track actual type
+            preset_data={'items': []},  # Placeholder
+            colors=['#0D0D0D', '#00FFFF', '#FF00FF']  # Updated colors
+        )
+
+        # Update preview with molt effect
+        self.split_layout.update_preview_with_molt(
+            updated_preset,
+            molt_type,
+            molt_duration=duration
+        )
 
     def show_easter_egg_dialog(self, easter_egg_data):
         """
