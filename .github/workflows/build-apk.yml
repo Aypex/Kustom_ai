@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout repository
@@ -61,8 +61,24 @@ jobs:
 
     - name: Build with Buildozer
       run: |
-        # Workaround for libffi autoconf issue - use bundled libtool macro
+        # Workaround for libffi autoconf issue - set environment to use older autoconf behavior
         export ACLOCAL_PATH=/usr/share/aclocal
+        export AUTOCONF_VERSION=2.69
+        
+        # Create a wrapper script to patch libffi on-the-fly
+        cat > /tmp/patch_libffi.sh << 'EOF'
+#!/bin/bash
+# Wait for libffi to be unpacked, then patch its configure.ac
+while [ ! -f ~/.buildozer/android/platform/build-*/build/other_builds/libffi/*/libffi/configure.ac ]; do
+  sleep 2
+done
+# Add m4_pattern_allow to suppress the LT_SYS_SYMBOL_USCORE error
+find ~/.buildozer/android/platform/build-*/build/other_builds/libffi -name configure.ac -exec sed -i '1i m4_pattern_allow([LT_SYS_SYMBOL_USCORE])' {} \;
+EOF
+        chmod +x /tmp/patch_libffi.sh
+        
+        # Run patcher in background
+        /tmp/patch_libffi.sh &
         
         # Use buildozer with auto-accept for all prompts
         yes | buildozer -v android debug 2>&1 | tee build.log || true
