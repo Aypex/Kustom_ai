@@ -1146,9 +1146,19 @@ class KLWPAIApp(MDApp):
 
     def build(self):
         """Build the app."""
+        from app.terminal_theme import TerminalTheme
+
         self.title = 'Chameleon'
         self.theme_cls.theme_style = 'Dark'
-        self.theme_cls.primary_palette = 'Blue'
+        self.theme_cls.primary_palette = 'Amber'
+
+        # Apply Terminal Chic theme
+        self.theme_cls.bg_darkest = TerminalTheme.BG_PRIMARY
+        self.theme_cls.bg_dark = TerminalTheme.BG_SECONDARY
+        self.theme_cls.bg_normal = TerminalTheme.BG_INPUT
+
+        # Override Material Design rounded corners (brutalist = 0)
+        self.theme_cls.round_button_radius = TerminalTheme.CORNER_RADIUS
 
         # Create screen manager with fade transitions (chameleon-like)
         from kivy.uix.screenmanager import FadeTransition
