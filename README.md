@@ -32,7 +32,7 @@ AI-powered editor for Kustom Live Wallpaper (KLWP) files on Android. Modify your
 
 ## Download
 
-**Latest Release:** [Download APK](https://github.com/YOUR_USERNAME/klwp-ai-assistant/releases/latest)
+**Latest Release:** [Download APK](https://github.com/Aypex/Kustom_ai/releases/latest)
 
 Or build from source (see below)
 
@@ -125,8 +125,8 @@ buildozer android debug
 
 ```bash
 # Clone the repo
-git clone https://github.com/YOUR_USERNAME/klwp-ai-assistant.git
-cd klwp-ai-assistant
+git clone https://github.com/Aypex/Kustom_ai.git
+cd Kustom_ai
 
 # Install dependencies
 pip install -r app/requirements.txt
@@ -157,9 +157,9 @@ Built with:
 
 ## Support
 
-- 🐛 [Report bugs](https://github.com/YOUR_USERNAME/klwp-ai-assistant/issues)
-- 💡 [Request features](https://github.com/YOUR_USERNAME/klwp-ai-assistant/issues)
-- 📖 [Documentation](https://github.com/YOUR_USERNAME/klwp-ai-assistant/wiki)
+- 🐛 [Report bugs](https://github.com/Aypex/Kustom_ai/issues)
+- 💡 [Request features](https://github.com/Aypex/Kustom_ai/issues)
+- 📖 [Documentation](https://github.com/Aypex/Kustom_ai/wiki)
 
 ---
 
