@@ -18,6 +18,7 @@ from app.easter_egg import EasterEggManager
 from app.ai_prompts import get_system_prompt
 from app.sass_personality import get_sass_response, ResponseContext
 from app.preview_system import PresetPreview, MoltType
+from app.preset_storage import PresetStorage
 from klwp_mcp_server.klwp_handler import KLWPHandler
 
 
@@ -29,6 +30,7 @@ class ChatHandler:
         self.preset_generator = PresetGenerator()
         self.easter_egg_manager = EasterEggManager()
         self.klwp_handler = KLWPHandler()
+        self.preset_storage = PresetStorage()
 
         # State tracking
         self.pending_preset = None  # Preset waiting for user confirmation
@@ -227,54 +229,56 @@ class ChatHandler:
         Save the pending preset and check for easter egg trigger.
 
         Returns:
-            Response and optional easter egg data
+            Response and action data (hide preview + optional easter egg)
         """
-        if not self.pending_preset or not self.pending_preset_name:
-            return ("I don't have a preset ready to save. Create one first!", None)
+        if not self.pending_preset or not self.pending_preset_name or not self.current_preview:
+            return (get_sass_response(ResponseContext.ERROR) + "\nNo preset to save.", None)
 
         try:
-            # Save the preset
-            preset_type = self.pending_preset_name.split('.')[-1]
-
-            # Convert to proper format and save
-            # For now, create in a presets directory
-            presets_dir = Path('/sdcard/Kustom/wallpapers') if preset_type == 'klwp' else \
-                         Path('/sdcard/Kustom/lockscreens') if preset_type == 'klck' else \
-                         Path('/sdcard/Kustom/widgets')
-
-            # In real implementation, would create proper ZIP file
-            # For now, just check easter egg
-
+            # Save the preset to storage
+            preset_type = self.current_preview.preset_type
             preset_data = self.pending_preset
 
-            # Check for easter egg trigger (ONLY if not shown before AND not rejected before)
-            should_trigger_easter_egg = self.easter_egg_manager.check_and_trigger_easter_egg(
-                self.pending_preset_name
+            # Get thumbnail path if available
+            thumbnail_path = self.current_preview.thumbnail_path
+
+            # Save to storage
+            metadata = self.preset_storage.save_preset(
+                name=self.pending_preset_name,
+                preset_data=preset_data,
+                preset_type=preset_type,
+                thumbnail_path=thumbnail_path
             )
 
-            response = f"✅ Saved '{self.pending_preset_name}' successfully!\n\n"
+            # Check for easter egg trigger
+            should_trigger_easter_egg = self.easter_egg_manager.check_and_trigger_easter_egg(
+                metadata.name
+            )
 
-            # Clear pending
+            # Response with sass
+            response = get_sass_response(ResponseContext.SUCCESS)
+            response += f"\n\n📋 Saved: {metadata.name}"
+            response += f"\n📁 {metadata.file_path}"
+
+            # Clear state
             self.pending_preset = None
             self.pending_preset_name = None
+            self.current_preview = None
 
-            # Return easter egg data if triggered
+            # Return with hide action + optional easter egg
             if should_trigger_easter_egg:
-                # This is their FIRST preset - offer the hidden feature
-                # But ONLY if they haven't rejected it before
                 if not self.easter_egg_manager.storage.get('easter_egg_rejected', False):
-                    easter_egg_data = {
-                        'trigger': True,
-                        'preset_colors': self.preset_generator.extract_theme_colors(preset_data),
-                        'preset_name': self.pending_preset_name
-                    }
+                    return (response, {
+                        'action': 'hide',
+                        'trigger': True,  # Easter egg
+                        'preset_colors': metadata.colors,
+                        'preset_name': metadata.name
+                    })
 
-                    return (response, easter_egg_data)
-
-            return (response, None)
+            return (response, {'action': 'hide'})
 
         except Exception as e:
-            return (f"Error saving preset: {str(e)}", None)
+            return (get_sass_response(ResponseContext.ERROR) + f"\n{str(e)}", None)
 
     def handle_easter_egg_response(self, accepted: bool) -> str:
         """
