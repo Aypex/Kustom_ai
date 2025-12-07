@@ -208,6 +208,14 @@ class LocalModelScreen(Screen):
         # Input area
         input_layout = BoxLayout(size_hint_y=0.15, spacing=10)
 
+        # Settings button (Terminal Chic style)
+        settings_btn = MDIconButton(
+            icon='cog',
+            size_hint_x=0.1,
+            on_release=self.open_settings
+        )
+        input_layout.add_widget(settings_btn)
+
         # Voice button (hidden initially - chameleon camo!)
         self.voice_button = MDRaisedButton(
             text='🎤',
@@ -264,6 +272,10 @@ class LocalModelScreen(Screen):
         from app.onboarding import OnboardingMessages
         voice_message = OnboardingMessages.voice_reveal()
         self.add_chat_message('Chameleon', voice_message)
+
+    def open_settings(self, instance):
+        """Open settings screen."""
+        self.manager.current = 'settings'
 
     def toggle_voice(self, instance):
         """Handle voice button click."""
@@ -1165,14 +1177,16 @@ class KLWPAIApp(MDApp):
         sm = ScreenManager(transition=FadeTransition())
 
         # Add screens
+        from app.settings_screen import SettingsScreen
+
         sm.add_widget(OnboardingScreen())  # Add onboarding first
         sm.add_widget(HomeScreen())
         sm.add_widget(PluginSelectorScreen())
         sm.add_widget(LocalModelScreen())
+        sm.add_widget(SettingsScreen())
         sm.add_widget(SSHSetupScreen())
         sm.add_widget(APISetupScreen())
         sm.add_widget(PresetsScreen())
-        sm.add_widget(SettingsScreen())
         sm.add_widget(DeviceInfoScreen())
 
         # Check if onboarding is complete
