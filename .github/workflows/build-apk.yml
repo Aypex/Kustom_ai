@@ -61,30 +61,15 @@ jobs:
 
     - name: Build with Buildozer
       run: |
-        # Workaround for libffi autoconf issue - set environment to use older autoconf behavior
-        export ACLOCAL_PATH=/usr/share/aclocal
-        export AUTOCONF_VERSION=2.69
-        
-        # Create a wrapper script to patch libffi on-the-fly
-        cat > /tmp/patch_libffi.sh << 'EOF'
-#!/bin/bash
-# Wait for libffi to be unpacked, then patch its configure.ac
-while [ ! -f ~/.buildozer/android/platform/build-*/build/other_builds/libffi/*/libffi/configure.ac ]; do
-  sleep 2
-done
-# Add m4_pattern_allow to suppress the LT_SYS_SYMBOL_USCORE error
-find ~/.buildozer/android/platform/build-*/build/other_builds/libffi -name configure.ac -exec sed -i '1i m4_pattern_allow([LT_SYS_SYMBOL_USCORE])' {} \;
-EOF
-        chmod +x /tmp/patch_libffi.sh
-        
-        # Run patcher in background
-        /tmp/patch_libffi.sh &
-        
         # Use buildozer with auto-accept for all prompts
         yes | buildozer -v android debug 2>&1 | tee build.log || true
         
-        # Try again if first attempt had issues
-        buildozer -v android debug
+        # If it failed on libffi, patch and retry
+        if grep -q "LT_SYS_SYMBOL_USCORE" build.log; then
+          echo "Patching libffi configure.ac..."
+          find ~/.buildozer/android/platform/build-*/build/other_builds/libffi -name configure.ac -exec sed -i '1i m4_pattern_allow([LT_SYS_SYMBOL_USCORE])' {} \; 2>/dev/null || true
+          buildozer -v android debug
+        fi
 
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
