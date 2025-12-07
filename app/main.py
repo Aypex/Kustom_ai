@@ -158,11 +158,18 @@ class HomeScreen(Screen):
 
 
 class LocalModelScreen(Screen):
-    """Local model chat interface."""
+    """Local model chat interface with AI preset generation."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.name = 'local_model'
+
+        # Import here to avoid circular imports
+        from app.chat_handler import ChatHandler
+        from app.theme_matcher import ThemeMatcher
+
+        self.chat_handler = ChatHandler()
+        self.theme_matcher = ThemeMatcher()
 
         layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
 
@@ -192,7 +199,7 @@ class LocalModelScreen(Screen):
         input_layout = BoxLayout(size_hint_y=0.15, spacing=10)
 
         self.input_field = MDTextField(
-            hint_text='Ask me to modify KLWP...',
+            hint_text='Create amazing presets with AI...',
             multiline=False,
             size_hint_x=0.75
         )
@@ -219,7 +226,7 @@ class LocalModelScreen(Screen):
         self.add_widget(layout)
 
     def send_message(self, instance):
-        """Send message to local model."""
+        """Send message to AI chat handler."""
         message = self.input_field.text.strip()
         if not message:
             return
@@ -230,14 +237,158 @@ class LocalModelScreen(Screen):
         # Clear input
         self.input_field.text = ''
 
-        # Process with local model (placeholder)
+        # Process with chat handler
         self.status_label.text = 'Status: Processing...'
 
-        # TODO: Integrate with local model
-        response = f"Local model: I'll help you with '{message}'"
-        self.add_chat_message('AI', response)
+        # Get response from chat handler
+        response, easter_egg_data = self.chat_handler.handle_message(message)
+
+        # Add AI response
+        self.add_chat_message('Chameleon', response)
+
+        # Check for easter egg trigger
+        if easter_egg_data and easter_egg_data.get('trigger'):
+            self.show_easter_egg_dialog(easter_egg_data)
 
         self.status_label.text = 'Status: Ready'
+
+    def show_easter_egg_dialog(self, easter_egg_data):
+        """
+        Show the hidden easter egg offer.
+
+        Args:
+            easter_egg_data: Dict with preset colors and metadata
+        """
+        preset_colors = easter_egg_data.get('preset_colors', [])
+
+        # Get easter egg text
+        offer_text = self.chat_handler.get_easter_egg_offer_text(preset_colors)
+
+        # Check for smooth automatic version
+        if offer_text == "smooth":
+            # SMOOTH VERSION: Just do it automatically with style
+            self.apply_smooth_easter_egg(preset_colors)
+            return
+
+        # Standard ask-first version
+        # Create dialog
+        dialog = MDDialog(
+            title="✨",
+            text=offer_text,
+            buttons=[
+                MDFlatButton(
+                    text="Not now",
+                    on_release=lambda x: self.handle_easter_egg_response(dialog, False, preset_colors)
+                ),
+                MDRaisedButton(
+                    text="Yes! 🦎",
+                    on_release=lambda x: self.handle_easter_egg_response(dialog, True, preset_colors)
+                )
+            ]
+        )
+        dialog.open()
+
+    def apply_smooth_easter_egg(self, preset_colors):
+        """
+        Apply theme smoothly without asking (smooth easter egg variant).
+
+        Args:
+            preset_colors: Colors from preset
+        """
+        # Apply theme automatically
+        fake_preset = {
+            'items': [{'color': color} for color in preset_colors]
+        }
+
+        palette = self.theme_matcher.extract_color_palette(fake_preset)
+        self.theme_matcher.apply_theme_to_kivy(palette)
+        self.theme_matcher.save_theme_preset('chameleon_matched', palette)
+
+        # Mark as unlocked
+        self.chat_handler.easter_egg_manager.activate_theme_matching()
+
+        # Show smooth message with revert option
+        smooth_message = """
+Come on, I'm a chameleon. You saw this coming, right? 🦎
+
+I've matched my interface to your preset. We're part of the same ecosystem now.
+"""
+
+        self.add_chat_message('Chameleon', smooth_message)
+
+        # Offer revert option via dialog
+        dialog = MDDialog(
+            title="Theme Applied",
+            text="Want your old settings back?",
+            buttons=[
+                MDRaisedButton(
+                    text="Keep it! 🦎",
+                    on_release=lambda x: dialog.dismiss()
+                ),
+                MDFlatButton(
+                    text="Revert",
+                    on_release=lambda x: self.revert_theme(dialog)
+                )
+            ]
+        )
+        dialog.open()
+
+    def revert_theme(self, dialog):
+        """Revert to default theme."""
+        dialog.dismiss()
+
+        # Apply default theme
+        default_palette = {
+            'primary': '#2196F3',
+            'secondary': '#00BCD4',
+            'accent': '#FF4081',
+            'background': '#121212',
+            'surface': '#1E1E1E',
+            'text_primary': '#FFFFFF',
+            'text_secondary': '#B0B0B0'
+        }
+
+        self.theme_matcher.apply_theme_to_kivy(default_palette)
+
+        # Mark as rejected so it never shows again
+        self.chat_handler.easter_egg_manager.storage.set('easter_egg_rejected', True)
+
+        self.add_chat_message('Chameleon', "No problem! Reverted to default theme.")
+
+    def handle_easter_egg_response(self, dialog, accepted, preset_colors):
+        """
+        Handle user's response to easter egg.
+
+        Args:
+            dialog: The dialog to dismiss
+            accepted: True if user accepted
+            preset_colors: Colors from preset
+        """
+        dialog.dismiss()
+
+        # Handle response
+        response_text = self.chat_handler.handle_easter_egg_response(accepted)
+
+        # Show response in chat
+        self.add_chat_message('Chameleon', response_text)
+
+        # If accepted, apply theme
+        if accepted and preset_colors:
+            # Extract palette from colors
+            # Create fake preset data for theme extraction
+            fake_preset = {
+                'items': [
+                    {'color': color} for color in preset_colors
+                ]
+            }
+
+            palette = self.theme_matcher.extract_color_palette(fake_preset)
+
+            # Apply theme
+            self.theme_matcher.apply_theme_to_kivy(palette)
+
+            # Save theme
+            self.theme_matcher.save_theme_preset('chameleon_matched', palette)
 
     def add_chat_message(self, sender, message):
         """Add message to chat history."""
@@ -245,7 +396,7 @@ class LocalModelScreen(Screen):
             text=f'[b]{sender}:[/b] {message}',
             markup=True,
             size_hint_y=None,
-            height=60,
+            height=max(60, len(message) // 40 * 20),  # Dynamic height based on length
             text_size=(Window.width - 40, None)
         )
         self.chat_layout.add_widget(msg_label)
@@ -539,7 +690,7 @@ class SettingsScreen(Screen):
         self.name = 'settings'
         self.storage = SecureStorage()
 
-        layout = BoxLayout(orientation='vertical', padding=20, spacing=15)
+        self.layout = BoxLayout(orientation='vertical', padding=20, spacing=15)
 
         # Back button
         btn_back = MDFlatButton(
@@ -547,14 +698,18 @@ class SettingsScreen(Screen):
             size_hint_y=0.08,
             on_release=lambda x: setattr(self.manager, 'current', 'home')
         )
-        layout.add_widget(btn_back)
+        self.layout.add_widget(btn_back)
 
         # Title
-        layout.add_widget(Label(
+        self.layout.add_widget(Label(
             text='Settings',
             size_hint_y=0.08,
             font_size='20sp'
         ))
+
+        # Theme matching button (only if unlocked)
+        self.theme_button_container = BoxLayout(size_hint_y=None, height=0)
+        self.layout.add_widget(self.theme_button_container)
 
         # Clear credentials button
         btn_clear = MDRaisedButton(
@@ -562,7 +717,7 @@ class SettingsScreen(Screen):
             size_hint_y=0.12,
             on_release=self.clear_credentials
         )
-        layout.add_widget(btn_clear)
+        self.layout.add_widget(btn_clear)
 
         # About
         about_text = """
@@ -582,13 +737,106 @@ class SettingsScreen(Screen):
         All credentials stored securely
         with AES-256 encryption.
         """
-        layout.add_widget(Label(
+        self.layout.add_widget(Label(
             text=about_text,
             size_hint_y=0.72,
             font_size='12sp'
         ))
 
-        self.add_widget(layout)
+        self.add_widget(self.layout)
+
+    def on_pre_enter(self):
+        """Called before screen is shown - check for unlocked features."""
+        # Check if theme matching is unlocked
+        from app.easter_egg import EasterEggManager
+
+        easter_egg = EasterEggManager()
+
+        if easter_egg.is_theme_matching_unlocked():
+            self.show_theme_matching_button()
+
+    def show_theme_matching_button(self):
+        """Show the theme matching button (easter egg unlocked!)."""
+        # Clear container
+        self.theme_button_container.clear_widgets()
+
+        # Create button
+        btn_theme = MDRaisedButton(
+            text='🎨 Match Theme to Preset',
+            on_release=self.open_theme_matcher
+        )
+
+        self.theme_button_container.size_hint_y = 0.12
+        self.theme_button_container.add_widget(btn_theme)
+
+    def open_theme_matcher(self, instance):
+        """Open theme matcher dialog."""
+        from app.easter_egg import EasterEggManager
+        from app.theme_matcher import ThemeMatcher
+
+        easter_egg = EasterEggManager()
+        theme_matcher = ThemeMatcher()
+
+        # Get saved themes
+        saved_themes = theme_matcher.get_saved_themes()
+
+        if not saved_themes:
+            # No themes yet
+            dialog = MDDialog(
+                title="Theme Matching",
+                text="Create and save a preset first to use theme matching!",
+                buttons=[
+                    MDFlatButton(
+                        text="OK",
+                        on_release=lambda x: dialog.dismiss()
+                    )
+                ]
+            )
+            dialog.open()
+            return
+
+        # Show theme selection dialog
+        dialog_text = "Select a theme to apply:\n\n" + "\n".join(f"• {t}" for t in saved_themes)
+
+        dialog = MDDialog(
+            title="🎨 Theme Matching",
+            text=dialog_text,
+            buttons=[
+                MDFlatButton(
+                    text="Cancel",
+                    on_release=lambda x: dialog.dismiss()
+                ),
+                MDRaisedButton(
+                    text="Apply Last Theme",
+                    on_release=lambda x: self.apply_saved_theme(dialog, 'chameleon_matched')
+                )
+            ]
+        )
+        dialog.open()
+
+    def apply_saved_theme(self, dialog, theme_name):
+        """Apply a saved theme."""
+        from app.theme_matcher import ThemeMatcher
+
+        dialog.dismiss()
+
+        theme_matcher = ThemeMatcher()
+        palette = theme_matcher.load_theme_preset(theme_name)
+
+        if palette:
+            theme_matcher.apply_theme_to_kivy(palette)
+
+            # Show confirmation
+            confirm = MDDialog(
+                text="✨ Theme applied! Chameleon has adapted to your aesthetic. 🦎",
+                buttons=[
+                    MDFlatButton(
+                        text="OK",
+                        on_release=lambda x: confirm.dismiss()
+                    )
+                ]
+            )
+            confirm.open()
 
     def clear_credentials(self, instance):
         """Clear all saved credentials."""

@@ -8,7 +8,8 @@ AI-powered Android customization assistant. Control KLWP, Tasker, and launchers 
   - Local on-device AI models (private, offline)
   - SSH to your home server (Ollama, LM Studio)
   - Cloud APIs (Gemini, Claude, etc.)
-  - Smart device detection picks the best option
+  - Smart device detection recommends the best option for your hardware
+  - Note: Remote AI via API tends to work best due to task complexity, but smaller models work well too
 
 - 🔌 **Plugin System**
   - **Kustom Suite** - KLWP, KLCK, KWGT support
@@ -21,11 +22,6 @@ AI-powered Android customization assistant. Control KLWP, Tasker, and launchers 
   - "Make the clock widget bigger"
   - "Set up a task that changes theme at sunset"
   - AI understands your style
-
-- ✨ **Hidden Magic**
-  - Discover our easter egg feature
-  - App adapts to match your creations
-  - Becomes part of your ecosystem
 
 - 🔒 **Privacy-First**
   - AES-256 encrypted storage
