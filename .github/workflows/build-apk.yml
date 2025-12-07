@@ -14,9 +14,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # ---------------------------------------------------------
-      # THE FIX: Explicitly setting Java 17 for Gradle 8+ support
-      # ---------------------------------------------------------
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
@@ -26,10 +23,23 @@ jobs:
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
+        # -----------------------------------------------------
+        # THE FIX: Force the container to run as root to avoid
+        # the "invalid user" crash.
+        # -----------------------------------------------------
+        env:
+          USER: root
         with:
           command: buildozer android debug
           buildozer_version: stable
           workdir: .
+
+      # -----------------------------------------------------
+      # THE CLEANUP: Since we built as root, we need to give
+      # ownership back to the runner so it can upload the APK.
+      # -----------------------------------------------------
+      - name: Fix permissions
+        run: sudo chown -R $USER:$USER .
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
