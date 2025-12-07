@@ -399,3 +399,61 @@ class PresetGenerator:
             return self._generate_widget(specs)
         else:
             raise ValueError(f"Unknown target type: {target_type}")
+
+    def edit_preset(self, preset: Dict[str, Any], command: str) -> tuple[Dict[str, Any], str]:
+        """
+        Edit preset based on natural language command.
+
+        Args:
+            preset: Current preset JSON
+            command: Natural language edit
+
+        Returns:
+            (updated_preset, edit_type) - edit_type for molt animation
+        """
+        cmd = command.lower()
+        items = preset.get('items', [])
+        edit_type = "transform"
+
+        # Color changes
+        if any(w in cmd for w in ['color', 'blue', 'red', 'green', 'orange', 'purple']):
+            color_map = {'blue': '#00D9FF', 'red': '#FF4136', 'green': '#2ECC40',
+                        'orange': '#FF851B', 'purple': '#B10DC9', 'pink': '#FF00FF'}
+            new_color = next((v for k, v in color_map.items() if k in cmd), '#00FFFF')
+
+            for item in items:
+                if item.get('id') != 'background' and 'color' in item:
+                    item['color'] = new_color
+            edit_type = "color"
+
+        # Size changes
+        elif any(w in cmd for w in ['bigger', 'smaller', 'larger']):
+            mult = 1.3 if 'bigger' in cmd or 'larger' in cmd else 0.7
+            for item in items:
+                if item.get('type') == 'TEXT':
+                    item['font_size'] = int(item.get('font_size', 24) * mult)
+                elif item.get('type') == 'SHAPE' and item.get('id') != 'background':
+                    item['width'] = int(item.get('width', 100) * mult)
+                    item['height'] = int(item.get('height', 100) * mult)
+            edit_type = "scale"
+
+        # Add elements
+        elif 'add' in cmd:
+            if 'battery' in cmd:
+                items.append(self._create_battery(
+                    {'colors': [preset['items'][0]['color'], '#00FFFF']}, 1600))
+                edit_type = "birth"
+
+        # Remove elements
+        elif 'remove' in cmd or 'delete' in cmd:
+            target = None
+            if 'clock' in cmd: target = 'clock'
+            elif 'date' in cmd: target = 'date'
+            elif 'battery' in cmd: target = 'battery'
+
+            if target:
+                items = [i for i in items if i.get('id') != target]
+                edit_type = "fade"
+
+        preset['items'] = items
+        return preset, edit_type
