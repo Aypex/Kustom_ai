@@ -17,6 +17,7 @@ from app.preview_system import (
     PreviewManager, PreviewState, PresetPreview,
     MoltType, get_clearance_text
 )
+from app.klwp_renderer import KLWPRenderer
 
 
 class PreviewWindow(FloatLayout):
@@ -119,6 +120,9 @@ class SplitChatPreviewLayout(BoxLayout):
         self.chat_widget = chat_widget
         self.preview_window = PreviewWindow(size_hint_x=0)
 
+        # Initialize KLWP renderer
+        self.renderer = KLWPRenderer()
+
         # Add chat (elastic width)
         self.add_widget(self.chat_widget)
 
@@ -145,8 +149,14 @@ class SplitChatPreviewLayout(BoxLayout):
         self.preview_window.clearance_text = clearance_msg or \
             get_clearance_text('initial_load')
 
-        # TODO: Load preview image from preset
-        # self.preview_window.update_preview_image(preset.thumbnail_path)
+        # Render preview image if we have preset data
+        if preset.preset_data:
+            try:
+                preview_path = self.renderer.render_preset(preset.preset_data)
+                self.preview_window.update_preview_image(preview_path)
+            except Exception as e:
+                print(f"⚠️ Preview render failed: {e}")
+                # Continue with animation even if render fails
 
         # Animate: Chat 100% → 30%, Preview 0% → 70%
         self._animate_split(
@@ -189,9 +199,12 @@ class SplitChatPreviewLayout(BoxLayout):
 
         # Update preview image after molt starts (0.5s delay for visual continuity)
         def update_after_delay(dt):
-            # TODO: Load new preview image
-            # self.preview_window.update_preview_image(new_preset.thumbnail_path)
-            pass
+            if new_preset.preset_data:
+                try:
+                    preview_path = self.renderer.render_preset(new_preset.preset_data)
+                    self.preview_window.update_preview_image(preview_path)
+                except Exception as e:
+                    print(f"⚠️ Preview update failed: {e}")
 
         Clock.schedule_once(update_after_delay, molt_duration * 0.5)
 
