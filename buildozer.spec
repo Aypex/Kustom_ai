@@ -1,13 +1,13 @@
 [app]
 
 # (str) Title of your application
-title = KLWP AI Assistant
+title = Chameleon
 
 # (str) Package name
-package.name = klwpaiassistant
+package.name = chameleon
 
 # (str) Package domain (needed for android/ios packaging)
-package.domain = org.klwp
+package.domain = com.chameleonai
 
 # (str) Source code where the main.py live
 source.dir = app

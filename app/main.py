@@ -47,7 +47,7 @@ class HomeScreen(Screen):
 
         # Title
         title = Label(
-            text='[b]KLWP AI Assistant[/b]',
+            text='[b]🦎 Chameleon[/b]',
             markup=True,
             size_hint_y=0.15,
             font_size='24sp'
@@ -566,13 +566,18 @@ class SettingsScreen(Screen):
 
         # About
         about_text = """
-        KLWP AI Assistant
+        🦎 Chameleon
         Version 1.0
 
-        Control KLWP with AI models
+        AI-powered Android customization
+        - KLWP, KLCK, KWGT
+        - Total Launcher
+        - Tasker
+
+        Adapt to any style:
         - Local models (on-device)
         - SSH to home network
-        - API models (Gemini)
+        - API models (Gemini/Claude)
 
         All credentials stored securely
         with AES-256 encryption.
@@ -713,7 +718,7 @@ class KLWPAIApp(MDApp):
 
     def build(self):
         """Build the app."""
-        self.title = 'KLWP AI Assistant'
+        self.title = 'Chameleon'
         self.theme_cls.theme_style = 'Dark'
         self.theme_cls.primary_palette = 'Blue'
 

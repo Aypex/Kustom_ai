@@ -1,34 +1,36 @@
-# KLWP AI Assistant 🤖
+# Chameleon 🦎
 
-AI-powered editor for Kustom Live Wallpaper (KLWP) files on Android. Modify your KLWP presets using natural language with local AI models, remote APIs, or SSH to your home server.
+AI-powered Android customization assistant. Control KLWP, Tasker, and launchers using natural language. Your phone adapts to you.
 
 ## Features
 
-- 🤖 **Multiple AI Backends**
-  - Local on-device AI models (lightweight, private)
-  - SSH tunnel to home-hosted AI (Ollama, LM Studio, etc.)
-  - Cloud API support (Gemini, Claude, etc.)
+- 🦎 **Adaptive Intelligence**
+  - Local on-device AI models (private, offline)
+  - SSH to your home server (Ollama, LM Studio)
+  - Cloud APIs (Gemini, Claude, etc.)
+  - Smart device detection picks the best option
 
-- 📱 **Smart Device Detection**
-  - Automatically recommends best AI mode for your hardware
-- 🎨 **Multi-Format Support**
-  - Works with KLWP (wallpapers), KLCK (lock screens), and KWGT (widgets)
-  - Create matching presets across formats
-  - Automatic style extraction and adaptation
-  - Maintain consistent theming
-  - Performance scoring and optimization tips
-  - Works on low-end to high-end devices
+- 🔌 **Plugin System**
+  - **Kustom Suite** - KLWP, KLCK, KWGT support
+  - **Total Launcher** - Layout manipulation
+  - **Tasker** - Task automation
+  - Extensible architecture for community plugins
 
-- 🎨 **KLWP Integration**
-  - Browse and edit KLWP presets directly
-  - Modify elements with natural language
-  - Automatic preset backup before changes
-  - Hot-reload KLWP after modifications
+- 🎨 **Natural Language Control**
+  - "Create a minimal dark wallpaper with neon accents"
+  - "Make the clock widget bigger"
+  - "Set up a task that changes theme at sunset"
+  - AI understands your style
 
-- 🔒 **Secure & Private**
-  - Encrypted storage for API keys
-  - SSH key management
-  - Local processing options for privacy
+- ✨ **Hidden Magic**
+  - Discover our easter egg feature
+  - App adapts to match your creations
+  - Becomes part of your ecosystem
+
+- 🔒 **Privacy-First**
+  - AES-256 encrypted storage
+  - Local processing options
+  - Your data stays yours
 
 ## Download
 
