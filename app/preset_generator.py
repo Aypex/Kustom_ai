@@ -53,18 +53,30 @@ class PresetGenerator:
         self.preset_cache = {}
 
     def generate_from_description(self, description: str,
-                                 preset_type: str = 'klwp') -> Dict[str, Any]:
+                                 preset_type: str = 'klwp',
+                                 use_ai: bool = True) -> Dict[str, Any]:
         """
         Generate preset from natural language description.
 
         Args:
             description: User's description (e.g., "cyberpunk wallpaper with digital clock")
             preset_type: Type of preset ('klwp', 'klck', 'kwgt')
+            use_ai: If True, use AI model; if False, use template-based generation
 
         Returns:
             Complete preset structure ready to save
         """
-        # Parse the description
+        # Try AI generation first if enabled
+        if use_ai:
+            try:
+                from app.ai_client import create_ai_client
+                client = create_ai_client()
+                return client.generate_preset(description, preset_type)
+            except Exception as e:
+                print(f"⚠️ AI generation failed: {e}")
+                print("Falling back to template-based generation...")
+
+        # Fallback: Template-based generation
         specs = self._parse_description(description)
 
         # Generate based on type
