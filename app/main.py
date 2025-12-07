@@ -318,18 +318,25 @@ class LocalModelScreen(Screen):
         # Process with chat handler
         self.status_label.text = 'Status: Processing...'
 
-        # Get response from chat handler
-        response, easter_egg_data = self.chat_handler.handle_message(message)
+        # Get response from chat handler (now returns preview_action or easter_egg_data)
+        response, action_data = self.chat_handler.handle_message(message)
 
         # Add AI response
         self.add_chat_message('Chameleon', response)
 
-        # Check for preset creation/editing commands
-        self._handle_preview_updates(message, response)
-
-        # Check for easter egg trigger
-        if easter_egg_data and easter_egg_data.get('trigger'):
-            self.show_easter_egg_dialog(easter_egg_data)
+        # Handle preview actions
+        if action_data:
+            if action_data.get('action') == 'show':
+                self._show_preview(action_data['preset'])
+            elif action_data.get('action') == 'update':
+                self._update_preview_with_molt(
+                    action_data['preset'],
+                    action_data['molt_type']
+                )
+            elif action_data.get('action') == 'hide':
+                self._hide_preview()
+            elif action_data.get('trigger'):  # Easter egg
+                self.show_easter_egg_dialog(action_data)
 
         self.status_label.text = 'Status: Ready'
 
@@ -363,71 +370,49 @@ class LocalModelScreen(Screen):
             # Hide preview when saving
             self.split_layout.hide_preview()
 
-    def _show_preview_for_creation(self, description: str, preset_type: str):
+    def _show_preview(self, preset: 'PresetPreview'):
         """
-        Show preview window for new preset creation.
+        Show preview window with new preset.
 
         Args:
-            description: User's description
-            preset_type: 'klwp', 'klck', or 'kwgt'
+            preset: PresetPreview object from ChatHandler
         """
-        # Generate placeholder preset (in real implementation, AI generates this)
-        # For now, create a simple preview
-        preset = PresetPreview(
-            preset_name=f"new_{preset_type}_preset",
-            preset_type=preset_type,
-            preset_data={'items': []},  # Placeholder
-            colors=['#000000', '#00FFFF', '#FF00FF']  # Example colors
-        )
-
-        self.current_preset_name = preset.preset_name
+        from app.sass_personality import get_clearance_sass, ResponseContext
 
         # Show preview with slide-in
         self.split_layout.show_preview(
             preset,
-            clearance_msg="Building this? 🦎"
+            clearance_msg=get_clearance_sass(ResponseContext.GREETING)
         )
 
-    def _update_preview_with_molt(self, user_command: str):
+    def _update_preview_with_molt(self, preset: 'PresetPreview', molt_type: 'MoltType'):
         """
-        Update preview with molt animation based on user's edit command.
+        Update preview with molt animation.
 
         Args:
-            user_command: User's edit command
+            preset: Updated PresetPreview object
+            molt_type: Type of molt animation to use
         """
-        # Determine molt type from command
-        cmd_lower = user_command.lower()
+        # Molt durations based on type
+        durations = {
+            'COLOR_SHIFT': 0.8,
+            'SCALE': 0.6,
+            'BIRTH': 1.0,
+            'FADE': 0.6,
+            'TRANSFORM': 1.2
+        }
+        duration = durations.get(molt_type.name, 0.8)
 
-        if any(word in cmd_lower for word in ['color', 'blue', 'red', 'green', 'darker', 'lighter']):
-            molt_type = MoltType.COLOR_SHIFT
-            duration = 0.8
-        elif any(word in cmd_lower for word in ['bigger', 'smaller', 'larger', 'size', 'scale']):
-            molt_type = MoltType.SCALE
-            duration = 0.6
-        elif any(word in cmd_lower for word in ['add', 'create', 'new']):
-            molt_type = MoltType.BIRTH
-            duration = 1.0
-        elif any(word in cmd_lower for word in ['remove', 'delete', 'hide']):
-            molt_type = MoltType.FADE
-            duration = 0.6
-        else:
-            molt_type = MoltType.TRANSFORM
-            duration = 1.2
-
-        # Generate updated preset (placeholder - AI would generate this)
-        updated_preset = PresetPreview(
-            preset_name=self.current_preset_name or "updated_preset",
-            preset_type='klwp',  # Would track actual type
-            preset_data={'items': []},  # Placeholder
-            colors=['#0D0D0D', '#00FFFF', '#FF00FF']  # Updated colors
-        )
-
-        # Update preview with molt effect
+        # Update preview with molt effect (preset is already updated by ChatHandler)
         self.split_layout.update_preview_with_molt(
-            updated_preset,
+            preset,
             molt_type,
             molt_duration=duration
         )
+
+    def _hide_preview(self):
+        """Hide preview window with slide-out animation."""
+        self.split_layout.hide_preview()
 
     def show_easter_egg_dialog(self, easter_egg_data):
         """
