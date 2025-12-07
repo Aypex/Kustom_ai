@@ -31,6 +31,7 @@ from kivymd.uix.menu import MDDropdownMenu
 from app.secure_storage import SecureStorage
 from app.device_detector import DeviceDetector
 from app.device_info_screen import DeviceInfoScreen
+from app.plugins import get_plugin_manager
 from klwp_mcp_server.klwp_handler import KLWPHandler
 
 
@@ -97,12 +98,22 @@ class HomeScreen(Screen):
         )
         layout.add_widget(btn_settings)
 
-        # Quick KLWP actions
-        layout.add_widget(Label(text='Quick Actions:', size_hint_y=0.08))
+        # App selection
+        layout.add_widget(Label(text='Control App:', size_hint_y=0.06))
+
+        btn_select_app = MDRaisedButton(
+            text='🔌 Select App (Kustom/Launcher/Tasker)',
+            size_hint_y=0.10,
+            on_release=self.select_app
+        )
+        layout.add_widget(btn_select_app)
+
+        # Quick actions
+        layout.add_widget(Label(text='Quick Actions:', size_hint_y=0.06))
 
         btn_presets = MDFlatButton(
             text='📁 Browse Presets',
-            size_hint_y=0.08,
+            size_hint_y=0.07,
             on_release=self.browse_presets
         )
         layout.add_widget(btn_presets)
@@ -110,7 +121,7 @@ class HomeScreen(Screen):
         # Device info button
         btn_device_info = MDFlatButton(
             text='📊 Device Info & Recommendations',
-            size_hint_y=0.08,
+            size_hint_y=0.07,
             on_release=self.show_device_info
         )
         layout.add_widget(btn_device_info)
@@ -140,6 +151,10 @@ class HomeScreen(Screen):
     def show_device_info(self, instance):
         """Show device information and recommendations."""
         self.manager.current = 'device_info'
+
+    def select_app(self, instance):
+        """Go to plugin/app selection screen."""
+        self.manager.current = 'plugin_selector'
 
 
 class LocalModelScreen(Screen):
@@ -587,6 +602,112 @@ class SettingsScreen(Screen):
         dialog.open()
 
 
+class PluginSelectorScreen(Screen):
+    """Screen for selecting which app to control."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.name = 'plugin_selector'
+        self.plugin_manager = get_plugin_manager()
+
+        layout = BoxLayout(orientation='vertical', padding=20, spacing=15)
+
+        # Back button
+        btn_back = MDFlatButton(
+            text='← Back',
+            size_hint_y=0.08,
+            on_release=lambda x: setattr(self.manager, 'current', 'home')
+        )
+        layout.add_widget(btn_back)
+
+        # Title
+        layout.add_widget(Label(
+            text='[b]Select App to Control[/b]',
+            markup=True,
+            size_hint_y=0.10,
+            font_size='20sp'
+        ))
+
+        # Description
+        layout.add_widget(Label(
+            text='Choose which Android customization app you want to control with AI:',
+            size_hint_y=0.08,
+            font_size='14sp'
+        ))
+
+        # Plugin list scroll view
+        scroll = ScrollView(size_hint_y=0.64)
+        self.plugin_list = MDList()
+        scroll.add_widget(self.plugin_list)
+        layout.add_widget(scroll)
+
+        # Refresh button
+        btn_refresh = MDFlatButton(
+            text='🔄 Refresh',
+            size_hint_y=0.10,
+            on_release=self.refresh_plugins
+        )
+        layout.add_widget(btn_refresh)
+
+        self.add_widget(layout)
+
+        # Load plugins
+        self.refresh_plugins()
+
+    def refresh_plugins(self, instance=None):
+        """Refresh plugin list."""
+        self.plugin_list.clear_widgets()
+
+        # Get all plugins
+        plugins = self.plugin_manager.get_plugins()
+
+        if not plugins:
+            item = OneLineListItem(text='No plugins found')
+            self.plugin_list.add_widget(item)
+            return
+
+        # Add plugin items
+        for plugin in plugins:
+            # Check if app is installed
+            installed = plugin.is_app_installed()
+            status_icon = '✅' if installed else '❌'
+
+            # Create list item
+            item = TwoLineListItem(
+                text=f'{status_icon} {plugin.get_supported_app()}',
+                secondary_text=f'{plugin.get_plugin_name()} v{plugin.get_plugin_version()}' +
+                              ('' if installed else ' (App not installed)')
+            )
+
+            # Only make clickable if app is installed
+            if installed:
+                item.bind(on_release=lambda x, p=plugin: self.select_plugin(p))
+
+            self.plugin_list.add_widget(item)
+
+    def select_plugin(self, plugin):
+        """Select a plugin to use."""
+        # Store selected plugin
+        app = self.manager.get_screen('home')
+        if hasattr(app, 'selected_plugin'):
+            app.selected_plugin = plugin
+        else:
+            setattr(app, 'selected_plugin', plugin)
+
+        # Show confirmation dialog
+        dialog = MDDialog(
+            text=f"Now controlling {plugin.get_supported_app()}!",
+            buttons=[
+                MDFlatButton(
+                    text="OK",
+                    on_release=lambda x: (dialog.dismiss(),
+                                        setattr(self.manager, 'current', 'home'))
+                )
+            ]
+        )
+        dialog.open()
+
+
 class KLWPAIApp(MDApp):
     """Main application."""
 
@@ -601,6 +722,7 @@ class KLWPAIApp(MDApp):
 
         # Add screens
         sm.add_widget(HomeScreen())
+        sm.add_widget(PluginSelectorScreen())
         sm.add_widget(LocalModelScreen())
         sm.add_widget(SSHSetupScreen())
         sm.add_widget(APISetupScreen())
