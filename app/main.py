@@ -779,6 +779,14 @@ class SettingsScreen(Screen):
             font_size='20sp'
         ))
 
+        # INTEL button (always visible - live docs)
+        btn_intel = MDRaisedButton(
+            text='[ INTEL ]',
+            size_hint_y=0.12,
+            on_release=self.open_intel_docs
+        )
+        self.layout.add_widget(btn_intel)
+
         # Theme matching button (only if unlocked)
         self.theme_button_container = BoxLayout(size_hint_y=None, height=0)
         self.layout.add_widget(self.theme_button_container)
@@ -909,6 +917,15 @@ class SettingsScreen(Screen):
                 ]
             )
             confirm.open()
+
+    def open_intel_docs(self, instance):
+        """Open live INTEL documentation (GitHub)."""
+        import webbrowser
+
+        # URL to raw GitHub markdown (will render nicely on mobile)
+        intel_url = "https://github.com/Aypex/Kustom_ai/blob/main/INTEL.md"
+
+        webbrowser.open(intel_url)
 
     def clear_credentials(self, instance):
         """Clear all saved credentials."""
