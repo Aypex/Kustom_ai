@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "klwp": {
+      "command": "bash",
+      "args": ["/home/char/Downloads/Kustom_ai/run_klwp_mcp.sh"]
+    }
+  }
+}
