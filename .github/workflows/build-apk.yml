@@ -60,9 +60,9 @@ jobs:
         key: buildozer-v2-${{ hashFiles('buildozer.spec') }}
     - name: Set Java 17
       run: |
-        export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
-        export PATH=$JAVA_HOME/bin:$PATH
-        java -version
+        echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
+        echo "/usr/lib/jvm/java-17-openjdk-amd64/bin" >> $GITHUB_PATH
+        /usr/lib/jvm/java-17-openjdk-amd64/bin/java -version
     - name: Build with Buildozer
       run: |
         # Use buildozer with auto-accept for all prompts
