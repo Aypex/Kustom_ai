@@ -359,18 +359,23 @@ def get_clearance_text(context: str, molt_type: Optional[MoltType] = None) -> st
     Returns:
         Clearance text string
     """
-    import random
+    from app.sass_personality import get_clearance_sass, ResponseContext
 
+    # Map molt types to sass contexts
     if molt_type == MoltType.COLOR_SHIFT:
-        return random.choice(CLEARANCE_TEMPLATES['color_change'])
+        return get_clearance_sass(ResponseContext.COLOR_CHANGE)
     elif molt_type == MoltType.SCALE:
-        return random.choice(CLEARANCE_TEMPLATES['size_change'])
+        return get_clearance_sass(ResponseContext.PRESET_EDITED)
     elif molt_type == MoltType.BIRTH:
-        return random.choice(CLEARANCE_TEMPLATES['element_added'])
+        return get_clearance_sass(ResponseContext.ELEMENT_ADDED)
     elif molt_type == MoltType.FADE:
-        return random.choice(CLEARANCE_TEMPLATES['element_removed'])
-    elif context in CLEARANCE_TEMPLATES:
-        return random.choice(CLEARANCE_TEMPLATES[context])
+        return get_clearance_sass(ResponseContext.ELEMENT_REMOVED)
+
+    # Default contexts
+    if context == 'initial_load':
+        return get_clearance_sass(ResponseContext.GREETING)
+    elif context == 'after_edit':
+        return get_clearance_sass(ResponseContext.PRESET_EDITED)
 
     return "Working with this? 🦎"
 
