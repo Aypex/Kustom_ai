@@ -32,6 +32,9 @@ from app.secure_storage import SecureStorage
 from app.device_detector import DeviceDetector
 from app.device_info_screen import DeviceInfoScreen
 from app.plugins import get_plugin_manager
+from app.onboarding import OnboardingManager
+from app.onboarding_screen import OnboardingScreen
+from app.chameleon_effects import ChameleonEffects, VoiceButtonReveal
 from klwp_mcp_server.klwp_handler import KLWPHandler
 
 
@@ -170,6 +173,8 @@ class LocalModelScreen(Screen):
 
         self.chat_handler = ChatHandler()
         self.theme_matcher = ThemeMatcher()
+        self.onboarding = OnboardingManager()
+        self.voice_reveal = VoiceButtonReveal()
 
         layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
 
@@ -198,10 +203,19 @@ class LocalModelScreen(Screen):
         # Input area
         input_layout = BoxLayout(size_hint_y=0.15, spacing=10)
 
+        # Voice button (hidden initially - chameleon camo!)
+        self.voice_button = MDRaisedButton(
+            text='🎤',
+            size_hint_x=0.15,
+            opacity=0,  # Start invisible
+            on_release=self.toggle_voice
+        )
+        input_layout.add_widget(self.voice_button)
+
         self.input_field = MDTextField(
             hint_text='Create amazing presets with AI...',
             multiline=False,
-            size_hint_x=0.75
+            size_hint_x=0.60
         )
         self.input_field.bind(on_text_validate=self.send_message)
         input_layout.add_widget(self.input_field)
@@ -224,6 +238,63 @@ class LocalModelScreen(Screen):
         layout.add_widget(self.status_label)
 
         self.add_widget(layout)
+
+        # Check if voice button should be revealed
+        self.check_voice_button_reveal()
+
+    def check_voice_button_reveal(self):
+        """Check if voice button should be revealed (chameleon camo drop)."""
+        if self.onboarding.should_show_voice_button():
+            # Reveal with chameleon effect!
+            from kivy.clock import Clock
+            Clock.schedule_once(lambda dt: self.reveal_voice_button(), 2.0)
+
+    def reveal_voice_button(self):
+        """Reveal voice button with chameleon camo drop animation."""
+        self.voice_reveal.reveal_voice_button(self.voice_button, self.layout)
+
+        # Add message about voice
+        from app.onboarding import OnboardingMessages
+        voice_message = OnboardingMessages.voice_reveal()
+        self.add_chat_message('Chameleon', voice_message)
+
+    def toggle_voice(self, instance):
+        """Handle voice button click."""
+        if not self.onboarding.has_voice_opt_in():
+            # First time - ask permission
+            self.show_voice_opt_in_dialog()
+        else:
+            # Voice is enabled - start recording
+            self.start_voice_input()
+
+    def show_voice_opt_in_dialog(self):
+        """Show dialog asking to enable voice features."""
+        dialog = MDDialog(
+            title="Enable Voice Chat?",
+            text="This will allow you to speak your commands instead of typing.\n\nVoice data is processed by your selected AI backend.",
+            buttons=[
+                MDFlatButton(
+                    text="Not now",
+                    on_release=lambda x: dialog.dismiss()
+                ),
+                MDRaisedButton(
+                    text="Enable Voice 🎤",
+                    on_release=lambda x: self.enable_voice_features(dialog)
+                )
+            ]
+        )
+        dialog.open()
+
+    def enable_voice_features(self, dialog):
+        """Enable voice features."""
+        dialog.dismiss()
+        self.onboarding.enable_voice()
+        self.add_chat_message('Chameleon', "Voice enabled! Tap 🎤 to speak.")
+
+    def start_voice_input(self):
+        """Start voice recording (placeholder for now)."""
+        # TODO: Implement actual voice recording
+        self.add_chat_message('Chameleon', "Voice input coming soon! For now, use text. 🎤")
 
     def send_message(self, instance):
         """Send message to AI chat handler."""
@@ -970,10 +1041,12 @@ class KLWPAIApp(MDApp):
         self.theme_cls.theme_style = 'Dark'
         self.theme_cls.primary_palette = 'Blue'
 
-        # Create screen manager
-        sm = ScreenManager()
+        # Create screen manager with fade transitions (chameleon-like)
+        from kivy.uix.screenmanager import FadeTransition
+        sm = ScreenManager(transition=FadeTransition())
 
         # Add screens
+        sm.add_widget(OnboardingScreen())  # Add onboarding first
         sm.add_widget(HomeScreen())
         sm.add_widget(PluginSelectorScreen())
         sm.add_widget(LocalModelScreen())
@@ -982,6 +1055,13 @@ class KLWPAIApp(MDApp):
         sm.add_widget(PresetsScreen())
         sm.add_widget(SettingsScreen())
         sm.add_widget(DeviceInfoScreen())
+
+        # Check if onboarding is complete
+        onboarding = OnboardingManager()
+        if not onboarding.is_onboarding_complete():
+            sm.current = 'onboarding'
+        else:
+            sm.current = 'home'
 
         return sm
 
