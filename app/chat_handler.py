@@ -19,6 +19,7 @@ from app.ai_prompts import get_system_prompt
 from app.sass_personality import get_sass_response, ResponseContext
 from app.preview_system import PresetPreview, MoltType
 from app.preset_storage import PresetStorage
+from app.kustom_bridge import get_kustom_bridge
 from klwp_mcp_server.klwp_handler import KLWPHandler
 
 
@@ -31,6 +32,7 @@ class ChatHandler:
         self.easter_egg_manager = EasterEggManager()
         self.klwp_handler = KLWPHandler()
         self.preset_storage = PresetStorage()
+        self.kustom_bridge = get_kustom_bridge()
 
         # State tracking
         self.pending_preset = None  # Preset waiting for user confirmation
@@ -255,10 +257,23 @@ class ChatHandler:
                 metadata.name
             )
 
+            # Try to apply to Kustom app
+            apply_success, apply_msg = self.kustom_bridge.apply_preset(
+                metadata.file_path,
+                preset_type
+            )
+
             # Response with sass
             response = get_sass_response(ResponseContext.SUCCESS)
             response += f"\n\n📋 Saved: {metadata.name}"
-            response += f"\n📁 {metadata.file_path}"
+
+            if apply_success:
+                response += f"\n✅ Sent to {preset_type.upper()}"
+            else:
+                response += f"\n⚠️ {apply_msg}"
+                # Offer to open app
+                if not self.kustom_bridge.check_installed(preset_type):
+                    response += f"\n\nInstall {preset_type.upper()} to apply presets."
 
             # Clear state
             self.pending_preset = None

@@ -1,0 +1,21 @@
+# Add these to buildozer.spec for Kustom intent support
+
+# Permissions (add to android.permissions)
+android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
+
+# Add FileProvider to manifest (for sharing files with Kustom apps)
+# This goes in the [app:android.manifest.application] section:
+android.manifest.application = """
+    <provider
+        android:name="androidx.core.content.FileProvider"
+        android:authorities="${applicationId}.fileprovider"
+        android:exported="false"
+        android:grantUriPermissions="true">
+        <meta-data
+            android:name="android.support.FILE_PROVIDER_PATHS"
+            android:resource="@xml/file_provider_paths" />
+    </provider>
+"""
+
+# Gradle dependencies (add androidx.core for FileProvider)
+android.gradle_dependencies = androidx.core:core:1.12.0
