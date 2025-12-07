@@ -358,27 +358,11 @@ I can create custom Android presets from natural language:
             preset_colors: Colors from the first preset
 
         Returns:
-            Easter egg reveal message
+            Easter egg reveal message (always "smooth" for auto-apply)
         """
-        import random
-
-        # 50% chance of smooth automatic version
-        if random.random() < 0.5:
-            return "smooth"  # Signal for smooth version
-
-        # Standard ask-first version
-        return f"""
-✨ One more thing...
-
-Would you like Chameleon to match your new aesthetic?
-
-I can adapt my interface colors to match your preset:
-{', '.join(preset_colors[:4])}
-
-This way, I become part of your ecosystem. 🦎
-
-Want to try it?
-"""
+        # Always use smooth automatic version for maximum impact
+        # with the molting shader effect
+        return "smooth"
 
     def should_show_theme_button(self) -> bool:
         """

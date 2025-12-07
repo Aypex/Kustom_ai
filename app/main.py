@@ -361,11 +361,16 @@ class LocalModelScreen(Screen):
 
     def apply_smooth_easter_egg(self, preset_colors):
         """
-        Apply theme smoothly without asking (smooth easter egg variant).
+        Apply theme automatically with molting shader effect.
+
+        This is THE easter egg - no asking, just adaptive evolution.
 
         Args:
             preset_colors: Colors from preset
         """
+        # TODO: Trigger AGSL molting shader animation here (1.2 seconds)
+        # For now, just apply immediately
+
         # Apply theme automatically
         fake_preset = {
             'items': [{'color': color} for color in preset_colors]
@@ -378,26 +383,22 @@ class LocalModelScreen(Screen):
         # Mark as unlocked
         self.chat_handler.easter_egg_manager.activate_theme_matching()
 
-        # Show smooth message with revert option
-        smooth_message = """
-Come on, I'm a chameleon. You saw this coming, right? 🦎
-
-I've matched my interface to your preset. We're part of the same ecosystem now.
-"""
+        # Show cheeky message
+        smooth_message = "I'm a chameleon. What did you expect? 🦎"
 
         self.add_chat_message('Chameleon', smooth_message)
 
         # Offer revert option via dialog
         dialog = MDDialog(
-            title="Theme Applied",
-            text="Want your old settings back?",
+            title="✨ Adaptive Camouflage Complete",
+            text="Your interface is now part of your ecosystem.\n\nWant to keep this look?",
             buttons=[
                 MDRaisedButton(
-                    text="Keep it! 🦎",
+                    text="Keep It 🦎",
                     on_release=lambda x: dialog.dismiss()
                 ),
                 MDFlatButton(
-                    text="Revert",
+                    text="Revert to Stock",
                     on_release=lambda x: self.revert_theme(dialog)
                 )
             ]
