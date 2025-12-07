@@ -16,6 +16,8 @@ from pathlib import Path
 from app.preset_generator import PresetGenerator
 from app.easter_egg import EasterEggManager
 from app.ai_prompts import get_system_prompt
+from app.sass_personality import get_sass_response, ResponseContext
+from app.preview_system import PresetPreview, MoltType
 from klwp_mcp_server.klwp_handler import KLWPHandler
 
 
@@ -31,6 +33,7 @@ class ChatHandler:
         # State tracking
         self.pending_preset = None  # Preset waiting for user confirmation
         self.pending_preset_name = None
+        self.current_preview = None  # Current PresetPreview being shown
         self.last_response = None
 
     def detect_intent(self, user_message: str) -> Dict[str, Any]:
@@ -95,8 +98,9 @@ class ChatHandler:
             user_message: User's message
 
         Returns:
-            Tuple of (response_text, easter_egg_data or None)
-            easter_egg_data format: {'trigger': True, 'colors': [...], 'accepted': True/False/None}
+            Tuple of (response_text, preview_action_data or easter_egg_data)
+            preview_action_data: {'action': 'show'/'update'/'hide', 'preset': PresetPreview, 'molt_type': str}
+            easter_egg_data: {'trigger': True, 'colors': [...], 'accepted': True/False/None}
         """
         intent = self.detect_intent(user_message)
 
@@ -107,11 +111,16 @@ class ChatHandler:
         if intent['type'] == 'reject' and self.pending_preset:
             self.pending_preset = None
             self.pending_preset_name = None
-            return ("No problem! The preset wasn't saved. Feel free to ask for something different!", None)
+            self.current_preview = None
+            return (get_sass_response(ResponseContext.SUCCESS), {'action': 'hide'})
 
         # Handle preset creation
         if intent['type'] == 'create_preset':
             return self._handle_preset_creation(intent)
+
+        # Handle preset modification
+        if intent['type'] == 'modify_preset' and self.current_preview:
+            return self._handle_preset_modification(user_message)
 
         # Handle theme matching (only if unlocked)
         if intent['type'] == 'theme_match':
@@ -128,7 +137,7 @@ class ChatHandler:
             intent: Intent dict with preset_type and description
 
         Returns:
-            Response and optional easter egg data
+            Response and preview action data
         """
         description = intent['description']
         preset_type = intent['preset_type']
@@ -147,13 +156,28 @@ class ChatHandler:
             preset_name = self._generate_preset_name(description, preset_type)
             self.pending_preset_name = preset_name
 
-            # Create preview response
-            response = self._create_preset_preview(preset_data, preset_name, preset_type, description)
+            # Create PresetPreview object
+            colors = self.preset_generator.extract_theme_colors(preset_data)
+            self.current_preview = PresetPreview(
+                preset_name=preset_name,
+                preset_type=preset_type,
+                preset_data=preset_data,
+                colors=colors
+            )
 
-            return (response, None)
+            # Response with sass
+            response = get_sass_response(ResponseContext.PRESET_CREATED)
+            response += f"\n\n📋 {preset_name}\n💾 Say 'yes' to save, or ask for changes"
+
+            # Return with show preview action
+            return (response, {
+                'action': 'show',
+                'preset': self.current_preview,
+                'molt_type': None
+            })
 
         except Exception as e:
-            return (f"Sorry, I had trouble creating that preset: {str(e)}", None)
+            return (get_sass_response(ResponseContext.ERROR) + f"\n{str(e)}", None)
 
     def _generate_preset_name(self, description: str, preset_type: str) -> str:
         """Generate a preset file name from description."""
@@ -372,3 +396,69 @@ I can create custom Android presets from natural language:
             True only if user accepted the easter egg
         """
         return self.easter_egg_manager.is_theme_matching_unlocked()
+"""
+Additional methods for ChatHandler to support preview/molt system.
+Add these to chat_handler.py
+"""
+
+def _handle_preset_modification(self, user_message: str) -> tuple[str, Optional[dict]]:
+    """
+    Handle preset modification request with molt animation.
+
+    Args:
+        user_message: User's edit command
+
+    Returns:
+        Response and preview update action
+    """
+    if not self.pending_preset or not self.current_preview:
+        return (get_sass_response(ResponseContext.ERROR) + "\nNo preset to modify.", None)
+
+    try:
+        # Edit the preset
+        updated_preset, edit_type = self.preset_generator.edit_preset(
+            self.pending_preset,
+            user_message
+        )
+
+        # Update state
+        self.pending_preset = updated_preset
+
+        # Create updated preview
+        colors = self.preset_generator.extract_theme_colors(updated_preset)
+        updated_preview = PresetPreview(
+            preset_name=self.current_preview.preset_name,
+            preset_type=self.current_preview.preset_type,
+            preset_data=updated_preset,
+            colors=colors
+        )
+        self.current_preview = updated_preview
+
+        # Map edit type to molt type
+        molt_map = {
+            'color': MoltType.COLOR_SHIFT,
+            'scale': MoltType.SCALE,
+            'birth': MoltType.BIRTH,
+            'fade': MoltType.FADE,
+            'transform': MoltType.TRANSFORM
+        }
+        molt_type = molt_map.get(edit_type, MoltType.TRANSFORM)
+
+        # Response with sass
+        context_map = {
+            'color': ResponseContext.COLOR_CHANGE,
+            'scale': ResponseContext.PRESET_EDITED,
+            'birth': ResponseContext.ELEMENT_ADDED,
+            'fade': ResponseContext.ELEMENT_REMOVED
+        }
+        response_context = context_map.get(edit_type, ResponseContext.PRESET_EDITED)
+        response = get_sass_response(response_context)
+
+        return (response, {
+            'action': 'update',
+            'preset': updated_preview,
+            'molt_type': molt_type
+        })
+
+    except Exception as e:
+        return (get_sass_response(ResponseContext.ERROR) + f"\n{str(e)}", None)
